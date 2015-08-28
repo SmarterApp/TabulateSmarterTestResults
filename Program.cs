@@ -11,20 +11,41 @@ namespace TabulateSmarterTestResults
     {
 
         static string sSyntax =
-            @"Replace this with syntax description";
+@"This tool tabulates XML test results files in SmarterApp Test Results
+Transmission Format into CSV files that match the SmarterApp Data Warehouse
+Student Assessment format and Data Warehouse Item Level format.
+
+Command-line parameters:
+ -i <input file>
+Filenames may include wildcards. If the file is a .zip then all .xml
+files in the .zip will be processed. The -i parameter may be repeated
+to process multiple input sources.
+
+ -os <output file>
+Output file for student test results. This will be a .csv formatted file that
+contains test results including student information and test scores.
+
+ -oi <output file>
+Output file for item results. This will be a .csv formatted file that
+contains item scores.";
 
         static void Main(string[] args)
         {
             try
             {
                 List<string> inputFilenames = new List<string>();
-                string outputFilename = null;
+                string osFilename = null;
+                string oiFilename = null;
                 bool help = false;
 
                 for (int i=0; i<args.Length; ++i)
                 {
                     switch (args[i])
                     {
+                        case "-h":
+                            help = true;
+                            break;
+
                         case "-i":
                             {
                                 ++i;
@@ -33,37 +54,52 @@ namespace TabulateSmarterTestResults
                             }
                             break;
 
-                        case "-o":
+                        case "-os":
                             {
                                 ++i;
                                 if (i >= args.Length) throw new ArgumentException("Invalid command line. '-o' option not followed by filename.");
-                                if (outputFilename != null) throw new ArgumentException("Only one output file may be specified.");
+                                if (osFilename != null) throw new ArgumentException("Only one output file may be specified.");
                                 string filename = Path.GetFullPath(args[i]);
-                                outputFilename = filename;
+                                osFilename = filename;
+                            }
+                            break;
+
+                        case "-oi":
+                            {
+                                ++i;
+                                if (i >= args.Length) throw new ArgumentException("Invalid command line. '-o' option not followed by filename.");
+                                if (oiFilename != null) throw new ArgumentException("Only one output file may be specified.");
+                                string filename = Path.GetFullPath(args[i]);
+                                oiFilename = filename;
                             }
                             break;
 
                         default:
-                            throw new ArgumentException(string.Format("Unknown command line option '{0}'. Use '-h' for syntax help."));
+                            throw new ArgumentException(string.Format("Unknown command line option '{0}'. Use '-h' for syntax help.", args[i]));
                     }
                 }
 
-                if (help)
+                if (help || args.Length == 0)
                 {
                     Console.WriteLine(sSyntax);
                 }
 
-                if (inputFilenames.Count == 0 || outputFilename == null) throw new ArgumentException("Invalid command line. Use '-h' for syntax help");
-
-                Console.WriteLine("Writing result to: " + outputFilename);
-                using (ITestResultProcessor processor = new ToCsvProcessor(outputFilename))
+                else
                 {
-                    foreach (string filename in inputFilenames)
+                    if (inputFilenames.Count == 0 || (osFilename == null && oiFilename == null)) throw new ArgumentException("Invalid command line. Use '-h' for syntax help");
+
+                    if (osFilename != null)
+                        Console.WriteLine("Writing student assessment results to: " + osFilename);
+                    if (oiFilename != null)
+                        Console.WriteLine("Writing item level results to: " + oiFilename);
+                    using (ITestResultProcessor processor = new ToCsvProcessor(osFilename, oiFilename))
                     {
-                        ProcessInputFilename(filename, processor);
+                        foreach (string filename in inputFilenames)
+                        {
+                            ProcessInputFilename(filename, processor);
+                        }
                     }
                 }
-        
             }
             catch (Exception err)
             {

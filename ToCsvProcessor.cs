@@ -10,32 +10,9 @@ using System.Diagnostics;
 namespace TabulateSmarterTestResults
 {
 
-    class XmlCsvMapping
-    {
-        string mCsvFieldName;
-        XPathExpression mXpathQuery;
-
-        public XmlCsvMapping(string csvFieldName, string xpathQuery)
-        {
-            mCsvFieldName = csvFieldName;
-            mXpathQuery = XPathExpression.Compile(xpathQuery);
-        }
-
-        public string CsvFieldName
-        {
-            get { return mCsvFieldName; }
-        }
-
-        public XPathExpression XPathQuery
-        {
-            get { return mXpathQuery; }
-        }
-
-    }
-
     class ToCsvProcessor : ITestResultProcessor
     {
-        static string[] sFieldNames = new string[]
+        static string[] sStudentFieldNames = new string[]
         {
             "StateAbbreviation",
             "ResponsibleDistrictIdentifier",
@@ -127,13 +104,35 @@ namespace TabulateSmarterTestResults
             "AccommodationNoiseBuffer"
         };
 
+        static string[] sItemFieldNames = new string[]
+        {
+            "key", // ItemId
+            "studentId", // May be StudentIdentifier or AlternateSSID
+            "segmentId",
+            "position",
+            "clientId",
+            "operational",
+            "isSelected",
+            "format",
+            "score",
+            "scoreStatus",
+            "adminDate",
+            "numberVisits",
+            "strand",
+            "contentLevel",
+            "pageNumber",
+            "pageVisits",
+            "pageTime",
+            "dropped"
+        };
+
         static XPathExpression sXp_StateAbbreviation = XPathExpression.Compile("/TDSReport/Examinee/ExamineeRelationship[@name='StateAbbreviation' and @context='FINAL']/@value");
-        static XPathExpression sXp_ResponsibleDistrictIdentifier = XPathExpression.Compile("/TDSReport/Examinee/ExamineeRelationship[@name='ResponsibleDistrictIdentifier' and @context='FINAL']/@value");
-        static XPathExpression sXp_OrganizationName = XPathExpression.Compile("/TDSReport/Examinee/ExamineeRelationship[@name='OrganizationName' and @context='FINAL']/@value");
-        static XPathExpression sXp_ResponsibleSchoolIdentifier = XPathExpression.Compile("/TDSReport/Examinee/ExamineeRelationship[@name='ResponsibleInstitutionIdentifier' and @context='FINAL']/@value");
-        static XPathExpression sXp_NameOfInstitution = XPathExpression.Compile("/TDSReport/Examinee/ExamineeRelationship[@name='NameOfInstitution' and @context='FINAL']/@value");
+        static XPathExpression sXp_DistrictId = XPathExpression.Compile("/TDSReport/Examinee/ExamineeRelationship[@name='ResponsibleDistrictIdentifier' and @context='FINAL']/@value");
+        static XPathExpression sXp_DistrictName = XPathExpression.Compile("/TDSReport/Examinee/ExamineeRelationship[@name='OrganizationName' and @context='FINAL']/@value");
+        static XPathExpression sXp_SchoolId = XPathExpression.Compile("/TDSReport/Examinee/ExamineeRelationship[@name='ResponsibleInstitutionIdentifier' and @context='FINAL']/@value");
+        static XPathExpression sXp_SchoolName = XPathExpression.Compile("/TDSReport/Examinee/ExamineeRelationship[@name='NameOfInstitution' and @context='FINAL']/@value");
         static XPathExpression sXp_StudentIdentifier = XPathExpression.Compile("/TDSReport/Examinee/ExamineeAttribute[@name='StudentIdentifier' and @context='FINAL']/@value");
-        static XPathExpression sXp_ExternalSSID = XPathExpression.Compile("/TDSReport/Examinee/ExamineeAttribute[@name='AlternateSSID' and @context='FINAL']/@value");
+        static XPathExpression sXp_AlternateSSID = XPathExpression.Compile("/TDSReport/Examinee/ExamineeAttribute[@name='AlternateSSID' and @context='FINAL']/@value");
         static XPathExpression sXp_FirstName = XPathExpression.Compile("/TDSReport/Examinee/ExamineeAttribute[@name='FirstName' and @context='FINAL']/@value");
         static XPathExpression sXp_MiddleName = XPathExpression.Compile("/TDSReport/Examinee/ExamineeAttribute[@name='MiddleName' and @context='FINAL']/@value");
         static XPathExpression sXp_LastOrSurname = XPathExpression.Compile("/TDSReport/Examinee/ExamineeAttribute[@name='LastOrSurname' and @context='FINAL']/@value");
@@ -152,14 +151,13 @@ namespace TabulateSmarterTestResults
         static XPathExpression sXp_Section504Status = XPathExpression.Compile("/TDSReport/Examinee/ExamineeAttribute[@name='Section504Status' and @context='FINAL']/@value");
         static XPathExpression sXp_EconomicDisadvantageStatus = XPathExpression.Compile("/TDSReport/Examinee/ExamineeAttribute[@name='EconomicDisadvantageStatus' and @context='FINAL']/@value");
         static XPathExpression sXp_MigrantStatus = XPathExpression.Compile("/TDSReport/Examinee/ExamineeAttribute[@name='MigrantStatus' and @context='FINAL']/@value");
-        static XPathExpression sXp_GroupId = XPathExpression.Compile("/TDSReport/Examinee/ExamineeRelationship[@name='StudentGroupName' and @context='FINAL']/@value");
-        static XPathExpression sXp_AssessmentGuid = XPathExpression.Compile("/TDSReport/Test/@testId");
-        static XPathExpression sXp_AssessmentLocationId = XPathExpression.Compile("/TDSReport/Opportunity/@sessionId");
-        static XPathExpression sXp_AssessmentYear = XPathExpression.Compile("/TDSReport/Test/@academicYear");
+        static XPathExpression sXp_StudentGroupName = XPathExpression.Compile("/TDSReport/Examinee/ExamineeRelationship[@name='StudentGroupName' and @context='FINAL']/@value");
+        static XPathExpression sXp_AssessmentId = XPathExpression.Compile("/TDSReport/Test/@testId");
+        static XPathExpression sXp_TestSessionId = XPathExpression.Compile("/TDSReport/Opportunity/@sessionId");
+        static XPathExpression sXp_SchoolYear = XPathExpression.Compile("/TDSReport/Test/@academicYear");
         static XPathExpression sXp_AssessmentType = XPathExpression.Compile("/TDSReport/Test/@assessmentType");
-        static XPathExpression sXp_AssessmentAcademicSubject = XPathExpression.Compile("/TDSReport/Test/@subject");
-        static XPathExpression sXp_AssessmentLevelForWhichDesigned = XPathExpression.Compile("/TDSReport/Test/@grade");
-        // From here forward, names are based on the Logical Data Model rather than the destination CSV field names
+        static XPathExpression sXp_Subject = XPathExpression.Compile("/TDSReport/Test/@subject");
+        static XPathExpression sXp_TestGrade = XPathExpression.Compile("/TDSReport/Test/@grade");
         static XPathExpression sXp_ScaleScore = XPathExpression.Compile("/TDSReport/Opportunity/Score[@measureOf='Overall' and @measureLabel='ScaleScore']/@value");
         static XPathExpression sXp_ScaleScoreStandardError = XPathExpression.Compile("/TDSReport/Opportunity/Score[@measureOf='Overall' and @measureLabel='ScaleScore']/@standardError");
         static XPathExpression sXp_ScaleScoreAchievementLevel = XPathExpression.Compile("/TDSReport/Opportunity/Score[@measureOf='Overall' and @measureLabel='PerformanceLevel']/@value");
@@ -181,6 +179,27 @@ namespace TabulateSmarterTestResults
         static XPathExpression sXp_ClaimScore4AchievementLevel = XPathExpression.Compile("/TDSReport/Opportunity/Score[@measureOf='4-CR' and @measureLabel='PerformanceLevel']/@value");
         // Matches all accessibility codes
         static XPathExpression sXP_AccessibilityCodes = XPathExpression.Compile("/TDSReport/Opportunity/Accommodation/@code");
+
+        // Item Level Data
+        static XPathExpression sXP_Item = XPathExpression.Compile("/TDSReport/Opportunity/Item");
+        static XPathExpression sXp_ItemKey = XPathExpression.Compile("@key");
+        static XPathExpression sXp_ItemBankKey = XPathExpression.Compile("@bankKey");
+        static XPathExpression sXp_SegmentId = XPathExpression.Compile("@segmentId");
+        static XPathExpression sXp_ItemPosition = XPathExpression.Compile("@position");
+        static XPathExpression sXp_ClientId = XPathExpression.Compile("@clientId");
+        static XPathExpression sXp_Operational = XPathExpression.Compile("@operational");
+        static XPathExpression sXp_IsSelected = XPathExpression.Compile("@isSelected");
+        static XPathExpression sXp_ItemType = XPathExpression.Compile("@format");
+        static XPathExpression sXp_ItemScore = XPathExpression.Compile("@score");
+        static XPathExpression sXp_ScoreStatus = XPathExpression.Compile("@scoreStatus");
+        static XPathExpression sXp_AdminDate = XPathExpression.Compile("@adminDate");
+        static XPathExpression sXp_NumberVisits = XPathExpression.Compile("@numberVisits");
+        static XPathExpression sXp_Strand = XPathExpression.Compile("@strand");
+        static XPathExpression sXp_ContentLevel = XPathExpression.Compile("@contentLevel");
+        static XPathExpression sXp_PageNumber = XPathExpression.Compile("@pageNumber");
+        static XPathExpression sXp_PageVisits = XPathExpression.Compile("@pageVisits");
+        static XPathExpression sXp_PageTime = XPathExpression.Compile("@pageTime");
+        static XPathExpression sXp_Dropped = XPathExpression.Compile("@dropped");
 
         static Dictionary<string, int> sAccessibilityCodeMapping;
 
@@ -209,17 +228,25 @@ namespace TabulateSmarterTestResults
             sAccessibilityCodeMapping.Add("NEA_NoiseBuf", 87); // Non-Embedded Noise Buffer
         }
       
-        Parse.CsvWriter mWriter;
+        Parse.CsvWriter mSWriter;
+        Parse.CsvWriter mIWriter;
 
-        public ToCsvProcessor(string filename)
+        public ToCsvProcessor(string osFilename, string oiFilename)
         {
 #if !DEBUG
-            if (File.Exists(filename)) throw new ApplicationException(string.Format("Output file, '{0}' already exists.", filename));
+            if (File.Exists(osFilename)) throw new ApplicationException(string.Format("Output file, '{0}' already exists.", osFilename));
+            if (File.Exists(oiFilename)) throw new ApplicationException(string.Format("Output file, '{0}' already exists.", oiFilename));
 #endif
-            mWriter = new Parse.CsvWriter(filename, false);
-
-            // Write out the field names in the first line
-            mWriter.Write(sFieldNames);
+            if (osFilename != null)
+            {
+                mSWriter = new Parse.CsvWriter(osFilename, false);
+                mSWriter.Write(sStudentFieldNames);
+            }
+            if (oiFilename != null)
+            {
+                mIWriter = new Parse.CsvWriter(oiFilename, false);
+                mIWriter.Write(sItemFieldNames);
+            }
         }
 
         public void ProcessResult(Stream input)
@@ -227,72 +254,73 @@ namespace TabulateSmarterTestResults
             XPathDocument doc = new XPathDocument(input);
             XPathNavigator nav = doc.CreateNavigator();
 
-            // Retrieve the fields
-            string[] fields = new string[sFieldNames.Length];
+            // Retrieve the student fields
+            string[] studentFields = new string[sStudentFieldNames.Length];
 
-            fields[0] = nav.Eval(sXp_StateAbbreviation);
-            fields[1] = nav.Eval(sXp_ResponsibleDistrictIdentifier);
-            fields[2] = nav.Eval(sXp_OrganizationName);
-            fields[3] = nav.Eval(sXp_ResponsibleSchoolIdentifier);
-            fields[4] = nav.Eval(sXp_NameOfInstitution);
-            fields[5] = nav.Eval(sXp_StudentIdentifier);
-            fields[6] = nav.Eval(sXp_ExternalSSID);
-            fields[7] = nav.Eval(sXp_FirstName);
-            fields[8] = nav.Eval(sXp_MiddleName);
-            fields[9] = nav.Eval(sXp_LastOrSurname);
-            fields[10] = nav.Eval(sXp_Sex);
-            fields[11] = nav.Eval(sXp_Birthdate);
-            fields[12] = nav.Eval(sXp_GradeLevelWhenAssessed);
-            fields[13] = nav.Eval(sXp_HispanicOrLatinoEthnicity);
-            fields[14] = nav.Eval(sXp_AmericanIndianOrAlaskaNative);
-            fields[15] = nav.Eval(sXp_Asian);
-            fields[16] = nav.Eval(sXp_BlackOrAfricanAmerican);
-            fields[17] = nav.Eval(sXp_NativeHawaiianOrOtherPacificIslander);
-            fields[18] = nav.Eval(sXp_White);
-            fields[19] = nav.Eval(sXp_DemographicRaceTwoOrMoreRaces);
-            fields[20] = nav.Eval(sXp_IDEAIndicator);
-            fields[21] = nav.Eval(sXp_LEPStatus);
-            fields[22] = nav.Eval(sXp_Section504Status);
-            fields[23] = nav.Eval(sXp_EconomicDisadvantageStatus);
-            fields[24] = nav.Eval(sXp_MigrantStatus);
+            studentFields[0] = nav.Eval(sXp_StateAbbreviation);
+            studentFields[1] = nav.Eval(sXp_DistrictId);
+            studentFields[2] = nav.Eval(sXp_DistrictName);
+            studentFields[3] = nav.Eval(sXp_SchoolId);
+            studentFields[4] = nav.Eval(sXp_SchoolName);
+            string studentId = nav.Eval(sXp_StudentIdentifier);
+            studentFields[5] = studentId;
+            studentFields[6] = nav.Eval(sXp_AlternateSSID);
+            studentFields[7] = nav.Eval(sXp_FirstName);
+            studentFields[8] = nav.Eval(sXp_MiddleName);
+            studentFields[9] = nav.Eval(sXp_LastOrSurname);
+            studentFields[10] = nav.Eval(sXp_Sex);
+            studentFields[11] = nav.Eval(sXp_Birthdate);
+            studentFields[12] = nav.Eval(sXp_GradeLevelWhenAssessed);
+            studentFields[13] = nav.Eval(sXp_HispanicOrLatinoEthnicity);
+            studentFields[14] = nav.Eval(sXp_AmericanIndianOrAlaskaNative);
+            studentFields[15] = nav.Eval(sXp_Asian);
+            studentFields[16] = nav.Eval(sXp_BlackOrAfricanAmerican);
+            studentFields[17] = nav.Eval(sXp_NativeHawaiianOrOtherPacificIslander);
+            studentFields[18] = nav.Eval(sXp_White);
+            studentFields[19] = nav.Eval(sXp_DemographicRaceTwoOrMoreRaces);
+            studentFields[20] = nav.Eval(sXp_IDEAIndicator);
+            studentFields[21] = nav.Eval(sXp_LEPStatus);
+            studentFields[22] = nav.Eval(sXp_Section504Status);
+            studentFields[23] = nav.Eval(sXp_EconomicDisadvantageStatus);
+            studentFields[24] = nav.Eval(sXp_MigrantStatus);
 
             // Up to 10 student groups
             {
-                XPathNodeIterator nodes = nav.Select(sXp_GroupId);
+                XPathNodeIterator nodes = nav.Select(sXp_StudentGroupName);
                 {
                     int i = 0;
                     while (i < 10 && nodes.MoveNext())
                     {
                         string value = nodes.Current.ToString();
-                        fields[i * 2 + 25] = value;
-                        fields[i * 2 + 26] = value;
+                        studentFields[i * 2 + 25] = value;
+                        studentFields[i * 2 + 26] = value;
                         ++i;
                     }
                     while (i < 10)
                     {
-                        fields[i * 2 + 25] = string.Empty;
-                        fields[i * 2 + 26] = string.Empty;
+                        studentFields[i * 2 + 25] = string.Empty;
+                        studentFields[i * 2 + 26] = string.Empty;
                         ++i;
                     }
                 }
             }
 
-            fields[45] = nav.Eval(sXp_AssessmentGuid);
-            fields[46] = nav.Eval(sXp_AssessmentLocationId);
-            fields[47] = string.Empty; // AssessmentLocation
-            fields[48] = string.Empty; // AssessmentAdministrationFinishDate
-            fields[49] = nav.Eval(sXp_AssessmentYear);
-            fields[50] = nav.Eval(sXp_AssessmentType);
-            fields[51] = nav.Eval(sXp_AssessmentAcademicSubject);
-            fields[52] = nav.Eval(sXp_AssessmentLevelForWhichDesigned);
-            ProcessScores(nav, sXp_ScaleScore, sXp_ScaleScoreStandardError, sXp_ScaleScoreAchievementLevel, fields, 53);
-            ProcessScores(nav, sXp_ClaimScore1, sXp_ClaimScore1StandardError, sXp_ClaimScore1AchievementLevel, fields, 57);
-            ProcessScores(nav, sXp_ClaimScore2, sXp_ClaimScore2StandardError, sXp_ClaimScore2AchievementLevel, fields, 61);
-            ProcessScores(nav, sXp_ClaimScore3, sXp_ClaimScore3StandardError, sXp_ClaimScore3AchievementLevel, fields, 65);
-            ProcessScores(nav, sXp_ClaimScore4, sXp_ClaimScore4StandardError, sXp_ClaimScore4AchievementLevel, fields, 69);
+            studentFields[45] = nav.Eval(sXp_AssessmentId);
+            studentFields[46] = nav.Eval(sXp_TestSessionId);
+            studentFields[47] = string.Empty; // AssessmentLocation
+            studentFields[48] = string.Empty; // AssessmentAdministrationFinishDate
+            studentFields[49] = nav.Eval(sXp_SchoolYear);
+            studentFields[50] = nav.Eval(sXp_AssessmentType);
+            studentFields[51] = nav.Eval(sXp_Subject);
+            studentFields[52] = nav.Eval(sXp_TestGrade);
+            ProcessScores(nav, sXp_ScaleScore, sXp_ScaleScoreStandardError, sXp_ScaleScoreAchievementLevel, studentFields, 53);
+            ProcessScores(nav, sXp_ClaimScore1, sXp_ClaimScore1StandardError, sXp_ClaimScore1AchievementLevel, studentFields, 57);
+            ProcessScores(nav, sXp_ClaimScore2, sXp_ClaimScore2StandardError, sXp_ClaimScore2AchievementLevel, studentFields, 61);
+            ProcessScores(nav, sXp_ClaimScore3, sXp_ClaimScore3StandardError, sXp_ClaimScore3AchievementLevel, studentFields, 65);
+            ProcessScores(nav, sXp_ClaimScore4, sXp_ClaimScore4StandardError, sXp_ClaimScore4AchievementLevel, studentFields, 69);
 
             // Preload accommodation fields with empty string
-            for (int i = 73; i < sFieldNames.Length; ++i) fields[i] = string.Empty;
+            for (int i = 73; i < sStudentFieldNames.Length; ++i) studentFields[i] = string.Empty;
 
             // Process accommodations
             {
@@ -304,14 +332,51 @@ namespace TabulateSmarterTestResults
                         int fieldIndex;
                         if (sAccessibilityCodeMapping.TryGetValue(code, out fieldIndex))
                         {
-                            fields[fieldIndex] = code;
+                            studentFields[fieldIndex] = code;
                         }
                     }
                 }
             }
 
             // Write one line to the CSV
-            mWriter.Write(fields);
+            if (mSWriter != null)
+                mSWriter.Write(studentFields);
+
+            // Report item data
+            {
+                XPathNodeIterator nodes = nav.Select(sXP_Item);
+                while (nodes.MoveNext())
+                {
+                    // Collect the item fields
+                    string[] itemFields = new string[sItemFieldNames.Length];
+
+                    XPathNavigator node = nodes.Current;
+
+                    itemFields[0] = string.Concat(node.Eval(sXp_ItemBankKey), "-", node.Eval(sXp_ItemKey));
+                    itemFields[1] = studentId;
+                    itemFields[2] = node.Eval(sXp_SegmentId);
+                    itemFields[3] = node.Eval(sXp_ItemPosition);
+                    itemFields[4] = node.Eval(sXp_ClientId);
+                    itemFields[5] = node.Eval(sXp_Operational);
+                    itemFields[6] = node.Eval(sXp_IsSelected);
+                    itemFields[7] = node.Eval(sXp_ItemType);
+                    itemFields[8] = node.Eval(sXp_ItemScore);
+                    itemFields[9] = node.Eval(sXp_ScoreStatus);
+                    itemFields[10] = node.Eval(sXp_AdminDate);
+                    itemFields[11] = node.Eval(sXp_NumberVisits);
+                    itemFields[12] = node.Eval(sXp_Strand);
+                    itemFields[13] = node.Eval(sXp_ContentLevel);
+                    itemFields[14] = node.Eval(sXp_PageNumber);
+                    itemFields[15] = node.Eval(sXp_PageVisits);
+                    itemFields[16] = node.Eval(sXp_PageTime);
+                    itemFields[17] = node.Eval(sXp_Dropped);
+
+                    // Write one line to the CSV
+                    if (mIWriter != null)
+                        mIWriter.Write(itemFields);
+                }
+            }
+
         }
 
         static void ProcessScores(XPathNavigator nav, XPathExpression xp_ScaleScore, XPathExpression xp_StdErr,
@@ -353,13 +418,18 @@ namespace TabulateSmarterTestResults
 
         void Dispose(bool disposing)
         {
-            if (mWriter != null)
+            if (mSWriter != null)
             {
 #if DEBUG
                 if (!disposing) Debug.Fail("Failed to dispose CsvWriter");
 #endif
-                mWriter.Dispose();
-                mWriter = null;
+                mSWriter.Dispose();
+                mSWriter = null;
+            }
+            if (mIWriter != null)
+            {
+                mIWriter.Dispose();
+                mIWriter = null;
             }
             if (disposing)
             {
