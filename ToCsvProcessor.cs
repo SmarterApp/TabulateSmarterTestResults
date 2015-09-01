@@ -205,17 +205,16 @@ namespace TabulateSmarterTestResults
 
         static ToCsvProcessor()
         {
+            // Only include codes that make the feature available.
+            // So, leave out TDS_ASL0, TDS_ClosedCap0, TDS_TTS0, 
             sAccessibilityCodeMapping = new Dictionary<string, int>();
-            sAccessibilityCodeMapping.Add("TDS_ASL0", 73); // American Sign Language
-            sAccessibilityCodeMapping.Add("TDS_ASL1", 73);
-            sAccessibilityCodeMapping.Add("TDS_ClosedCap0", 75); // Closed Captioning
-            sAccessibilityCodeMapping.Add("TDS_ClosedCap1", 75);
+            sAccessibilityCodeMapping.Add("TDS_ASL1", 73); // American Sign Language
+            sAccessibilityCodeMapping.Add("TDS_ClosedCap1", 75); // Closed Captioning
             sAccessibilityCodeMapping.Add("ENU-Braille", 74); // Braille
             sAccessibilityCodeMapping.Add("TDS_PoD_Stim", 81); // Print on Demand Stimuli
             sAccessibilityCodeMapping.Add("TDS_PoD_Item", 82); // Print on Demand Item
             sAccessibilityCodeMapping.Add("TDS_TS_Accessibility", 86); // Streamline
-            sAccessibilityCodeMapping.Add("TDS_TTS0", 76); // Text to Speech
-            sAccessibilityCodeMapping.Add("TDS_TTS_Item", 76);
+            sAccessibilityCodeMapping.Add("TDS_TTS_Item", 76); // Text to Speech
             sAccessibilityCodeMapping.Add("TDS_TTS_Stim", 76);
             sAccessibilityCodeMapping.Add("TDS_TTS_Stim&TDS_TTS_Item", 76);
             sAccessibilityCodeMapping.Add("NEA_AR", 78); // Non-Embedded Alternate Response Options
@@ -268,7 +267,8 @@ namespace TabulateSmarterTestResults
             studentFields[7] = nav.Eval(sXp_FirstName);
             studentFields[8] = nav.Eval(sXp_MiddleName);
             studentFields[9] = nav.Eval(sXp_LastOrSurname);
-            studentFields[10] = nav.Eval(sXp_Sex);
+            string sex = nav.Eval(sXp_Sex);
+            studentFields[10] = (sex.Length > 0 && (sex[0] == 'M' || sex[0] == 'm')) ? "Male" : "Female";
             studentFields[11] = nav.Eval(sXp_Birthdate);
             studentFields[12] = nav.Eval(sXp_GradeLevelWhenAssessed);
             studentFields[13] = nav.Eval(sXp_HispanicOrLatinoEthnicity);
@@ -319,8 +319,8 @@ namespace TabulateSmarterTestResults
             ProcessScores(nav, sXp_ClaimScore3, sXp_ClaimScore3StandardError, sXp_ClaimScore3AchievementLevel, studentFields, 65);
             ProcessScores(nav, sXp_ClaimScore4, sXp_ClaimScore4StandardError, sXp_ClaimScore4AchievementLevel, studentFields, 69);
 
-            // Preload accommodation fields with empty string
-            for (int i = 73; i < sStudentFieldNames.Length; ++i) studentFields[i] = string.Empty;
+            // Preload accommodation fields with "3" (accessibility feature not made available)
+            for (int i = 73; i < sStudentFieldNames.Length; ++i) studentFields[i] = "3";
 
             // Process accommodations
             {
@@ -332,7 +332,7 @@ namespace TabulateSmarterTestResults
                         int fieldIndex;
                         if (sAccessibilityCodeMapping.TryGetValue(code, out fieldIndex))
                         {
-                            studentFields[fieldIndex] = code;
+                            studentFields[fieldIndex] = "6"; // Set code to 6 accessibility feature made available.
                         }
                     }
                 }
