@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.IO.Compression;
 
 namespace TabulateSmarterTestResults
 {
@@ -247,8 +248,22 @@ de-identification option will cause student groups to be removed.
         static void ProcessInputZipFile(string filename, ITestResultProcessor processor)
         {
             Console.WriteLine("Processing: " + filename);
+            using (ZipArchive zip = ZipFile.Open(filename, ZipArchiveMode.Read))
+            {
+                foreach(ZipArchiveEntry entry in zip.Entries)
+                {
+                    // Must not be folder (empty name) and must have .xml extension
+                    if (!string.IsNullOrEmpty(entry.Name) && Path.GetExtension(entry.Name).Equals(".xml", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Console.WriteLine("   Processing: " + entry.FullName);
+                        using (Stream stream = entry.Open())
+                        {
+                            processor.ProcessResult(stream);
+                        }
+                    }
+                }
+            }
             Console.WriteLine();
-            throw new NotImplementedException("Zip file support is not yet implemented.");
         }
 
     }
