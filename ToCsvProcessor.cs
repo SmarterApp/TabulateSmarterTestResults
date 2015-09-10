@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Xml.XPath;
 using System.Diagnostics;
+using System.Security.Cryptography;
 
 namespace TabulateSmarterTestResults
 {
@@ -227,8 +228,9 @@ namespace TabulateSmarterTestResults
             sAccessibilityCodeMapping.Add("NEA_NoiseBuf", 87); // Non-Embedded Noise Buffer
         }
       
-        Parse.CsvWriter mSWriter;
-        Parse.CsvWriter mIWriter;
+        Parse.CsvWriter m_sWriter;
+        Parse.CsvWriter m_iWriter;
+        byte[] m_hashKey;
 
         public ToCsvProcessor(string osFilename, string oiFilename)
         {
@@ -238,13 +240,34 @@ namespace TabulateSmarterTestResults
 #endif
             if (osFilename != null)
             {
-                mSWriter = new Parse.CsvWriter(osFilename, false);
-                mSWriter.Write(sStudentFieldNames);
+                m_sWriter = new Parse.CsvWriter(osFilename, false);
+                m_sWriter.Write(sStudentFieldNames);
             }
             if (oiFilename != null)
             {
-                mIWriter = new Parse.CsvWriter(oiFilename, false);
-                mIWriter.Write(sItemFieldNames);
+                m_iWriter = new Parse.CsvWriter(oiFilename, false);
+                m_iWriter.Write(sItemFieldNames);
+            }
+        }
+
+        public DIDFlags DIDFlags { get; set; }
+
+        static readonly UTF8Encoding UTF8NoByteOrderMark = new UTF8Encoding(false);
+
+        public string HashPassPhrase
+        {
+            set
+            {
+                if (value == null)
+                {
+                    m_hashKey = null;
+                }
+                else
+                {
+                    SHA1 sha = new SHA1CryptoServiceProvider();
+                    byte[] pfb = UTF8NoByteOrderMark.GetBytes(value);
+                    m_hashKey = sha.ComputeHash(pfb);
+                }
             }
         }
 
@@ -338,9 +361,57 @@ namespace TabulateSmarterTestResults
                 }
             }
 
+            // If hash key provided, cryptographically hash the student ID
+            if (m_hashKey != null)
+            {
+                HMACSHA1 hmac = new HMACSHA1(m_hashKey);
+                byte[] bid = UTF8NoByteOrderMark.GetBytes(studentId);
+                byte[] hash = hmac.ComputeHash(bid);
+                string alternateSSID = ByteArrayToHexString(hash);
+                studentFields[6] = alternateSSID;
+            }
+
+            // De-identify if specified
+            if ((this.DIDFlags & DIDFlags.Id) != 0)
+            {
+                // Student ID is a special case. De-identification means to substitute
+                // the AlternateSSID for the student Id.
+                studentId = studentFields[6];
+                studentFields[5] = studentId;
+            }
+            if ((this.DIDFlags & DIDFlags.Name) != 0)
+            {
+                studentFields[7] = string.Empty;
+                studentFields[8] = string.Empty;
+                studentFields[9] = string.Empty;
+            }
+            if ((this.DIDFlags & DIDFlags.Birthdate) != 0)
+            {
+                studentFields[11] = string.Empty;
+            }
+            if ((this.DIDFlags & DIDFlags.Demographics) != 0)
+            {
+                studentFields[10] = string.Empty;
+                for (int i = 12; i <= 24; ++i) studentFields[i] = string.Empty;
+            }
+            if ((this.DIDFlags & DIDFlags.School) != 0)
+            {
+                studentFields[1] = string.Empty;
+                studentFields[2] = string.Empty;
+                studentFields[3] = string.Empty;
+                studentFields[4] = string.Empty;
+                studentFields[46] = string.Empty;
+                studentFields[47] = string.Empty; // AssessmentLocation
+            }
+            if (this.DIDFlags != DIDFlags.None)
+            {
+                // If any DID option is set, clear all student groups
+                for (int i=25; i<=44; ++i) studentFields[i] = string.Empty;
+            }
+
             // Write one line to the CSV
-            if (mSWriter != null)
-                mSWriter.Write(studentFields);
+            if (m_sWriter != null)
+                m_sWriter.Write(studentFields);
 
             // Report item data
             {
@@ -372,8 +443,8 @@ namespace TabulateSmarterTestResults
                     itemFields[17] = node.Eval(sXp_Dropped);
 
                     // Write one line to the CSV
-                    if (mIWriter != null)
-                        mIWriter.Write(itemFields);
+                    if (m_iWriter != null)
+                        m_iWriter.Write(itemFields);
                 }
             }
 
@@ -419,6 +490,14 @@ namespace TabulateSmarterTestResults
             return (point > 1) ? number.Substring(0, point) : number;
         }
 
+        static string ByteArrayToHexString(byte[] inputArray)
+        {
+            if (inputArray == null) return null;
+            StringBuilder o = new StringBuilder();
+            for (int i = 0; i < inputArray.Length; i++) o.Append(inputArray[i].ToString("X2"));
+            return o.ToString();
+        }
+
         ~ToCsvProcessor()
         {
             Dispose(false);
@@ -432,18 +511,18 @@ namespace TabulateSmarterTestResults
 
         void Dispose(bool disposing)
         {
-            if (mSWriter != null)
+            if (m_sWriter != null)
             {
 #if DEBUG
                 if (!disposing) Debug.Fail("Failed to dispose CsvWriter");
 #endif
-                mSWriter.Dispose();
-                mSWriter = null;
+                m_sWriter.Dispose();
+                m_sWriter = null;
             }
-            if (mIWriter != null)
+            if (m_iWriter != null)
             {
-                mIWriter.Dispose();
-                mIWriter = null;
+                m_iWriter.Dispose();
+                m_iWriter = null;
             }
             if (disposing)
             {
