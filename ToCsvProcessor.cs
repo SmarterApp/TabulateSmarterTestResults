@@ -382,27 +382,41 @@ namespace TabulateSmarterTestResults
         static void ProcessScores(XPathNavigator nav, XPathExpression xp_ScaleScore, XPathExpression xp_StdErr,
             XPathExpression xp_PerfLvl, string[] fields, int index)
         {
-            string scaleScore = nav.Eval(xp_ScaleScore);
-            string stdErr = nav.Eval(xp_StdErr);
+            // We round fractional scale scores down to the lower whole number. This is because
+            // the performance level has already been calculated on the fractional number. If
+            // we rounded to the nearest whole number then half the time the number would be
+            // rounded up. And if the fractional number was just below the performance level
+            // cut score, a round up could show a whole number score that doesn't correspond
+            // to the performance level.
+
+            string scaleScore = Floor(nav.Eval(xp_ScaleScore));
+            string stdErr = Floor(nav.Eval(xp_StdErr));
             string perfLvl = nav.Eval(xp_PerfLvl);
 
             fields[index] = scaleScore;
             fields[index + 3] = perfLvl;
 
-            double scaleScoreF;
-            double stdErrF;
-            if (double.TryParse(scaleScore, out scaleScoreF) && double.TryParse(stdErr, out stdErrF))
+            int scaleScoreN;
+            int stdErrN;
+            if (int.TryParse(scaleScore, out scaleScoreN) && int.TryParse(stdErr, out stdErrN))
             {
                 // MinimumValue
-                fields[index + 1] = (scaleScoreF - stdErrF).ToString("F3", System.Globalization.CultureInfo.InvariantCulture);
+                fields[index + 1] = (scaleScoreN - stdErrN).ToString("d", System.Globalization.CultureInfo.InvariantCulture);
                 // MaximumValue
-                fields[index + 2] = (scaleScoreF + stdErrF).ToString("F3", System.Globalization.CultureInfo.InvariantCulture);
+                fields[index + 2] = (scaleScoreN + stdErrN).ToString("d", System.Globalization.CultureInfo.InvariantCulture);
             }
             else
             {
                 fields[index + 1] = string.Empty;
                 fields[index + 2] = string.Empty;
             }
+        }
+
+        // Take the floor of a decimal number string
+        static string Floor(string number)
+        {
+            int point = number.IndexOf('.');
+            return (point > 1) ? number.Substring(0, point) : number;
         }
 
         ~ToCsvProcessor()
