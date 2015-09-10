@@ -49,9 +49,6 @@ The Student ID hash is prepared as follows:
     string.
  4. The hexadecimal string is placed in the AlternateSSID (ExternalSSID)
     field replacing any existing contents.
-If the De-Identification option include the ""i"" (StudentID) flag then
-the hashed student ID is substituted for the student ID in both the
-student test results and the item results files.
 
 The De-Identification Option (-did):
 One or more of the following flags should follow the -did option.
@@ -63,7 +60,7 @@ de-identification option will cause student groups to be removed.
  i  Replace the StudentID with the AlternateSSID. If the AlternateSSID
     is blank then StudentID will be blank in both the student and item
     files. If the -hid is specified then the the newly generated
-    AlternateSSID will be used.
+    AlternateSSID will be used for both AlternateSSID and StudentID.
  n  Remove first, middle, and last names.
  b  Remove birthdate.
  d  Remove demographic information (gender, race, ethnicity)
