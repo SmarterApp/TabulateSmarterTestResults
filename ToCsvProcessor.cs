@@ -432,7 +432,8 @@ namespace TabulateSmarterTestResults
                     itemFields[6] = node.Eval(sXp_IsSelected);
                     itemFields[7] = node.Eval(sXp_ItemType);
                     itemFields[8] = node.Eval(sXp_ItemScore);
-                    itemFields[9] = node.Eval(sXp_ScoreStatus);
+                    string scoreStatus = node.Eval(sXp_ScoreStatus);
+                    itemFields[9] = string.IsNullOrEmpty(scoreStatus) ? "NOTSCORED" : scoreStatus;
                     itemFields[10] = node.Eval(sXp_AdminDate);
                     itemFields[11] = node.Eval(sXp_NumberVisits);
                     itemFields[12] = node.Eval(sXp_Strand);
