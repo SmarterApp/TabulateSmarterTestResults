@@ -124,7 +124,9 @@ namespace TabulateSmarterTestResults
             "pageNumber",
             "pageVisits",
             "pageTime",
-            "dropped"
+            "dropped",
+            "opportunityId",
+            "opportunityKey"
         };
 
         static XPathExpression sXp_StateAbbreviation = XPathExpression.Compile("/TDSReport/Examinee/ExamineeRelationship[@name='StateAbbreviation' and @context='FINAL']/@value");
@@ -201,6 +203,8 @@ namespace TabulateSmarterTestResults
         static XPathExpression sXp_PageVisits = XPathExpression.Compile("@pageVisits");
         static XPathExpression sXp_PageTime = XPathExpression.Compile("@pageTime");
         static XPathExpression sXp_Dropped = XPathExpression.Compile("@dropped");
+        static XPathExpression sXp_OpportunityId = XPathExpression.Compile("/TDSReport/Opportunity/@oppId");
+        static XPathExpression sXp_OpportunityKey = XPathExpression.Compile("/TDSReport/Opportunity/@key");
 
         static Dictionary<string, int> sAccessibilityCodeMapping;
 
@@ -442,6 +446,8 @@ namespace TabulateSmarterTestResults
                     itemFields[15] = node.Eval(sXp_PageVisits);
                     itemFields[16] = node.Eval(sXp_PageTime);
                     itemFields[17] = node.Eval(sXp_Dropped);
+                    itemFields[18] = node.Eval(sXp_OpportunityId);
+                    itemFields[19] = node.Eval(sXp_OpportunityKey);
 
                     // Write one line to the CSV
                     if (m_iWriter != null)

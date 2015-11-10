@@ -24,11 +24,12 @@ to process multiple input sources.
 
  -os <output file>
 Output file for student test results. This will be a .csv formatted file that
-contains test results including student information and test scores.
+contains test results including student information and test scores.  Include the
+.csv file extension.
 
  -oi <output file>
 Output file for item results. This will be a .csv formatted file that
-contains item scores.
+contains item scores.  Include the .csv file extension.
 
  -hid <passphrase>
 Hash the Student ID using the specified passphrase as a key. And place the
@@ -66,6 +67,9 @@ de-identification option will cause student groups to be removed.
  d  Remove demographic information (gender, race, ethnicity)
  s  Remove school and district information. Also removes session location
     id and name.
+
+Syntax example:
+TabulateSmarterTestResults.exe -i testresults.zip -os studentresults.csv -oi itemresults.csv -hid smarter -did inbds
 ";
 
         static void Main(string[] args)
