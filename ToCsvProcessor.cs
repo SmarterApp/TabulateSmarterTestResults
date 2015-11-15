@@ -292,9 +292,13 @@ namespace TabulateSmarterTestResults
             studentFields[2] = nav.Eval(sXp_DistrictName);
             studentFields[3] = nav.Eval(sXp_SchoolId);
             studentFields[4] = nav.Eval(sXp_SchoolName);
+
             string studentId = nav.Eval(sXp_StudentIdentifier);
+            string alternateSSID = nav.Eval(sXp_AlternateSSID);
+            if (string.IsNullOrEmpty(studentId)) studentId = alternateSSID;
+
             studentFields[5] = studentId;
-            studentFields[6] = nav.Eval(sXp_AlternateSSID);
+            studentFields[6] = alternateSSID;
             studentFields[7] = nav.Eval(sXp_FirstName);
             studentFields[8] = nav.Eval(sXp_MiddleName);
             studentFields[9] = nav.Eval(sXp_LastOrSurname);
@@ -382,7 +386,7 @@ namespace TabulateSmarterTestResults
                 HMACSHA1 hmac = new HMACSHA1(m_hashKey);
                 byte[] bid = UTF8NoByteOrderMark.GetBytes(studentId);
                 byte[] hash = hmac.ComputeHash(bid);
-                string alternateSSID = ByteArrayToHexString(hash);
+                alternateSSID = ByteArrayToHexString(hash);
                 studentFields[6] = alternateSSID;
             }
 
@@ -391,8 +395,8 @@ namespace TabulateSmarterTestResults
             {
                 // Student ID is a special case. De-identification means to substitute
                 // the AlternateSSID for the student Id.
-                studentId = studentFields[6];
-                studentFields[5] = studentId;
+                studentId = alternateSSID;
+                studentFields[5] = alternateSSID;
             }
             if ((this.DIDFlags & DIDFlags.Name) != 0)
             {
