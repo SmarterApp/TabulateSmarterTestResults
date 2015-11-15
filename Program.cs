@@ -72,6 +72,8 @@ Syntax example:
 TabulateSmarterTestResults.exe -i testresults.zip -os studentresults.csv -oi itemresults.csv -hid smarter -did inbds
 ";
 
+        static int s_ErrorCount = 0;
+
         static void Main(string[] args)
         {
             try
@@ -192,6 +194,11 @@ TabulateSmarterTestResults.exe -i testresults.zip -os studentresults.csv -oi ite
                         }
                     }
                 }
+
+                if (s_ErrorCount > 0)
+                {
+                    Console.Error.WriteLine("{0} total errors", s_ErrorCount);
+                }
             }
             catch (Exception err)
             {
@@ -241,7 +248,16 @@ TabulateSmarterTestResults.exe -i testresults.zip -os studentresults.csv -oi ite
             Console.WriteLine("Processing: " + filename);
             using (FileStream stream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                processor.ProcessResult(stream);
+                try
+                {
+                    processor.ProcessResult(stream);
+                }
+                catch (Exception err)
+                {
+                    Console.Error.WriteLine("Error processing input file '{0}\r\n{1}\r\n", filename, err.Message);
+                    ++s_ErrorCount;
+                }
+
             }
             Console.WriteLine();
         }
@@ -259,7 +275,15 @@ TabulateSmarterTestResults.exe -i testresults.zip -os studentresults.csv -oi ite
                         Console.WriteLine("   Processing: " + entry.FullName);
                         using (Stream stream = entry.Open())
                         {
-                            processor.ProcessResult(stream);
+                            try
+                            {
+                                processor.ProcessResult(stream);
+                            }
+                            catch (Exception err)
+                            {
+                                Console.Error.WriteLine("Error processing input file '{0}/{1}\r\n{2}\r\n", filename, entry.FullName, err.Message);
+                                ++s_ErrorCount;
+                            }
                         }
                     }
                 }
