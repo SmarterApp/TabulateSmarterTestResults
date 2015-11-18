@@ -40,6 +40,13 @@ with de-identification See below for details of the hashing algorithm.
 De-identify the data by setting certain fields to blank. The flags indicate
 which fields should be set to blank. See below for details.
 
+ -fmt <format>
+Specifies the output format. Default is 'dw' which is the format accepted
+by the Data Warehouse. The 'all' format includes all fields defined in the
+Smarter Balanced ""Test Results Logical Data Model"". The 'allshort' format
+includes all fields but only includes the student response if it is 10
+characters or shorter in length.
+
 Student ID Hash:
 The Student ID hash is prepared as follows:
  1. The passphrase is encoded into UTF8 and hashed into a 160-bit key using
@@ -69,7 +76,7 @@ de-identification option will cause student groups to be removed.
     id and name.
 
 Syntax example:
-TabulateSmarterTestResults.exe -i testresults.zip -os studentresults.csv -oi itemresults.csv -hid smarter -did inbds
+TabulateSmarterTestResults.exe -i testresults.zip -os studentresults.csv -oi itemresults.csv -hid smarter -did inbds -fmt all
 ";
 
         static int s_ErrorCount = 0;
@@ -83,6 +90,8 @@ TabulateSmarterTestResults.exe -i testresults.zip -os studentresults.csv -oi ite
                 string oiFilename = null;
                 string hashPassPhrase = null;
                 DIDFlags didFlags = DIDFlags.None;
+                OutputFormat outputFormat = OutputFormat.Dw;
+                int maxResponse = 0;
                 bool help = false;
 
                 for (int i=0; i<args.Length; ++i)
@@ -123,16 +132,16 @@ TabulateSmarterTestResults.exe -i testresults.zip -os studentresults.csv -oi ite
 
                         case "-hid":
                             {
-                                if (i >= args.Length) throw new ArgumentException("Invalid command line. '-hid' option not followed by passphrase.");
                                 ++i;
+                                if (i >= args.Length) throw new ArgumentException("Invalid command line. '-hid' option not followed by passphrase.");
                                 hashPassPhrase = args[i];
                             }
                             break;
 
                         case "-did":
                             {
-                                if (i >= args.Length) throw new ArgumentException("Invalid command line. '-did' option not followed by flags.");
                                 ++i;
+                                if (i >= args.Length) throw new ArgumentException("Invalid command line. '-did' option not followed by flags.");
                                 foreach (char c in args[i])
                                 {
                                     switch (Char.ToLowerInvariant(c))
@@ -165,6 +174,29 @@ TabulateSmarterTestResults.exe -i testresults.zip -os studentresults.csv -oi ite
                             }
                             break;
 
+                        case "-fmt":
+                            ++i;
+                            if (i >= args.Length) throw new ArgumentException("Invalid command line. '-fmt' option not followed by format type.");
+                            switch (args[i])
+                            {
+                                case "dw":
+                                    outputFormat = OutputFormat.Dw;
+                                    break;
+
+                                case "all":
+                                    outputFormat = OutputFormat.All;
+                                    break;
+
+                                case "allshort":
+                                    outputFormat = OutputFormat.All;
+                                    maxResponse = 10;
+                                    break;
+
+                                default:
+                                    throw new ArgumentException(string.Format("Invalid command line. Output format '{0}' is unknown.", args[i]));
+                            }
+                            break;
+
                         default:
                             throw new ArgumentException(string.Format("Unknown command line option '{0}'. Use '-h' for syntax help.", args[i]));
                     }
@@ -183,10 +215,11 @@ TabulateSmarterTestResults.exe -i testresults.zip -os studentresults.csv -oi ite
                         Console.WriteLine("Writing student assessment results to: " + osFilename);
                     if (oiFilename != null)
                         Console.WriteLine("Writing item level results to: " + oiFilename);
-                    using (ToCsvProcessor processor = new ToCsvProcessor(osFilename, oiFilename))
+                    using (ToCsvProcessor processor = new ToCsvProcessor(osFilename, oiFilename, outputFormat))
                     {
                         processor.HashPassPhrase = hashPassPhrase;
                         processor.DIDFlags = didFlags;
+                        processor.MaxResponse = maxResponse;
 
                         foreach (string filename in inputFilenames)
                         {
@@ -302,6 +335,12 @@ TabulateSmarterTestResults.exe -i testresults.zip -os studentresults.csv -oi ite
         Birthdate = 4,
         Demographics = 8,   // Sex, Race, Ethnicity
         School = 16          // School and districtID or ExternalSSID is unaffected
+    }
+
+    enum OutputFormat : int
+    {
+        Dw = 0,             // Data Warehouse Format
+        All = 1             // All fields format
     }
 
     interface ITestResultProcessor : IDisposable

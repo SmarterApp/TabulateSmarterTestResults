@@ -39,11 +39,10 @@ namespace Parse
                 string value = values[i];
                 if (value.IndexOfAny(sCsvSpecialChars) >= 0)
                 {
+                    if (value.IndexOf('\r') >= 0) value = value.Replace("\r", "");  // For Excel - substitutes \n for \r\n and newlines are tolerated.
+                    if (value.IndexOf('"') >= 0) value = value.Replace("\"", "\"\"");
                     mWriter.Write('"');
-                    if (value.IndexOf('"') >= 0)
-                        mWriter.Write(value.Replace("\"", "\"\""));
-                    else
-                        mWriter.Write(value);
+                    mWriter.Write(value);
                     mWriter.Write('"');
                 }
                 else
