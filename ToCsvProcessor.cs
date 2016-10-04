@@ -566,8 +566,8 @@ namespace TabulateSmarterTestResults
                 studentFields[(int)DwStudentFieldNames.OrganizationName] = districtName;
                 studentFields[(int)DwStudentFieldNames.ResponsibleSchoolIdentifier] = schoolId;
                 studentFields[(int)DwStudentFieldNames.NameOfInstitution] = schoolName;
-                studentFields[(int)DwStudentFieldNames.StudentIdentifier] = NotExcel ? studentId : studentId + "\t"; // Tab causes Excel to treat this as text, not number
-                studentFields[(int)DwStudentFieldNames.ExternalSSID] = NotExcel ? alternateSSID : alternateSSID + "\t";
+                studentFields[(int)DwStudentFieldNames.StudentIdentifier] = studentId;
+                studentFields[(int)DwStudentFieldNames.ExternalSSID] = alternateSSID;
                 studentFields[(int)DwStudentFieldNames.FirstName] = firstName;
                 studentFields[(int)DwStudentFieldNames.MiddleName] = middleName;
                 studentFields[(int)DwStudentFieldNames.LastOrSurname] = lastOrSurname;

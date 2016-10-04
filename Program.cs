@@ -48,9 +48,11 @@ includes all fields but only includes the student response if it is 10
 characters or shorter in length.
 
  -notxl
-Normally the studentID and AlternateSSID fields are padded with a trailing
-tab character to prevent Microsoft Excel from treating them as numbers. This
-option supporesses the tab padding for use by other CSV readers.
+When using the 'all' format (-fmt all) studentID and AlternateSSID fields are
+padded with a trailing tab character to prevent Microsoft Excel from treating
+them as numbers. This option supporesses the tab padding for use by other CSV
+readers. The data warehouse format never pads and this option has no effect
+in that mode.
 
 Student ID Hash:
 The Student ID hash is prepared as follows:
