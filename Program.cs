@@ -47,6 +47,11 @@ Smarter Balanced ""Test Results Logical Data Model"". The 'allshort' format
 includes all fields but only includes the student response if it is 10
 characters or shorter in length.
 
+ -notxl
+Normally the studentID and AlternateSSID fields are padded with a trailing
+tab character to prevent Microsoft Excel from treating them as numbers. This
+option supporesses the tab padding for use by other CSV readers.
+
 Student ID Hash:
 The Student ID hash is prepared as follows:
  1. The passphrase is encoded into UTF8 and hashed into a 160-bit key using
@@ -88,6 +93,7 @@ TabulateSmarterTestResults.exe -i testresults.zip -os studentresults.csv -oi ite
                 List<string> inputFilenames = new List<string>();
                 string osFilename = null;
                 string oiFilename = null;
+                bool notExcel = false;
                 string hashPassPhrase = null;
                 DIDFlags didFlags = DIDFlags.None;
                 OutputFormat outputFormat = OutputFormat.Dw;
@@ -128,6 +134,10 @@ TabulateSmarterTestResults.exe -i testresults.zip -os studentresults.csv -oi ite
                                 string filename = Path.GetFullPath(args[i]);
                                 oiFilename = filename;
                             }
+                            break;
+
+                        case "-notxl":
+                            notExcel = true;
                             break;
 
                         case "-hid":
@@ -220,6 +230,7 @@ TabulateSmarterTestResults.exe -i testresults.zip -os studentresults.csv -oi ite
                         processor.HashPassPhrase = hashPassPhrase;
                         processor.DIDFlags = didFlags;
                         processor.MaxResponse = maxResponse;
+                        processor.NotExcel = notExcel;
 
                         foreach (string filename in inputFilenames)
                         {

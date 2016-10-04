@@ -184,7 +184,9 @@ namespace TabulateSmarterTestResults
             Claim3ScoreAchievementLevel,
             Claim4Score,
             Claim4ScoreStandardError,
-            Claim4ScoreAchievementLevel
+            Claim4ScoreAchievementLevel,
+            OverallTheta,
+            OverallThetaStandardError
         };
         static readonly int AllStudentFieldNamesCount = Enum.GetNames(typeof(AllStudentFieldNames)).Length;
 
@@ -300,6 +302,8 @@ namespace TabulateSmarterTestResults
         static XPathExpression sXp_ClaimScore4 = XPathExpression.Compile("/TDSReport/Opportunity/Score[(@measureOf='4-CR' or @measureOf='Claim4') and (@measureLabel='ScaleScore' or @measurelabel='ScaleScore')]/@value");
         static XPathExpression sXp_ClaimScore4StandardError = XPathExpression.Compile("/TDSReport/Opportunity/Score[(@measureOf='4-CR' or @measureOf='Claim4') and (@measureLabel='ScaleScore' or @measurelabel='ScaleScore')]/@standardError");
         static XPathExpression sXp_ClaimScore4AchievementLevel = XPathExpression.Compile("/TDSReport/Opportunity/Score[(@measureOf='4-CR' or @measureOf='Claim4') and (@measureLabel='PerformanceLevel' or @measurelabel='PerformanceLevel')]/@value");
+        static XPathExpression sXp_OverallTheta = XPathExpression.Compile("/TDSReport/Opportunity/Score[@measureOf='Overall' and (@measurelabel='Theta' or @measurelabel='Pre-LOSS/HOSS theta')]/@value");
+        static XPathExpression sXp_OverallThetaStandardError = XPathExpression.Compile("/TDSReport/Opportunity/Score[@measureOf='Overall' and (@measurelabel='Theta' or @measurelabel='Pre-LOSS/HOSS theta')]/@standardError");
         // Matches all accessibility codes
         static XPathExpression sXP_AccessibilityCodes = XPathExpression.Compile("/TDSReport/Opportunity/Accommodation/@code");
 
@@ -309,8 +313,10 @@ namespace TabulateSmarterTestResults
         static XPathExpression sXp_SubmitDateTime = XPathExpression.Compile("/TDSReport/Opportunity/@dateCompleted");
         static XPathExpression sXp_Status = XPathExpression.Compile("/TDSReport/Opportunity/@status");
         static XPathExpression sXp_StatusDateTime = XPathExpression.Compile("/TDSReport/Opportunity/@statusDate");
-        static XPathExpression sXp_AdministrationCondition = XPathExpression.Compile("/TDSReport/Opportunity/@administrationCondition");
-        static XPathExpression sXp_Completeness = XPathExpression.Compile("/TDSReport/Opportunity/@completeStatus");
+        static XPathExpression sXp_AdministrationCondition_0 = XPathExpression.Compile("/TDSReport/Opportunity/@administrationCondition");
+        static XPathExpression sXp_AdministrationCondition_1 = XPathExpression.Compile("/TDSReport/Opportunity/@validity");
+        static XPathExpression sXp_Completeness_0 = XPathExpression.Compile("/TDSReport/Opportunity/@completeness");
+        static XPathExpression sXp_Completeness_1 = XPathExpression.Compile("/TDSReport/Opportunity/@completeStatus");
         static XPathExpression sXp_NumberOfResponses = XPathExpression.Compile("/TDSReport/Opportunity/@itemCount");
         static XPathExpression sXp_FieldTestCount = XPathExpression.Compile("/TDSReport/Opportunity/@ftCount");
         static XPathExpression sXp_PauseCount = XPathExpression.Compile("/TDSReport/Opportunity/@pauseCount");
@@ -406,6 +412,8 @@ namespace TabulateSmarterTestResults
         public OutputFormat OutputFormat { get; private set; }
 
         public int MaxResponse { get; set; }
+
+        public bool NotExcel { get; set; }
 
         static readonly UTF8Encoding UTF8NoByteOrderMark = new UTF8Encoding(false);
 
@@ -558,8 +566,8 @@ namespace TabulateSmarterTestResults
                 studentFields[(int)DwStudentFieldNames.OrganizationName] = districtName;
                 studentFields[(int)DwStudentFieldNames.ResponsibleSchoolIdentifier] = schoolId;
                 studentFields[(int)DwStudentFieldNames.NameOfInstitution] = schoolName;
-                studentFields[(int)DwStudentFieldNames.StudentIdentifier] = studentId;
-                studentFields[(int)DwStudentFieldNames.ExternalSSID] = alternateSSID;
+                studentFields[(int)DwStudentFieldNames.StudentIdentifier] = NotExcel ? studentId : studentId + "\t"; // Tab causes Excel to treat this as text, not number
+                studentFields[(int)DwStudentFieldNames.ExternalSSID] = NotExcel ? alternateSSID : alternateSSID + "\t";
                 studentFields[(int)DwStudentFieldNames.FirstName] = firstName;
                 studentFields[(int)DwStudentFieldNames.MiddleName] = middleName;
                 studentFields[(int)DwStudentFieldNames.LastOrSurname] = lastOrSurname;
@@ -640,8 +648,8 @@ namespace TabulateSmarterTestResults
                 studentFields[(int)AllStudentFieldNames.AssessmentType] = nav.Eval(sXp_AssessmentType);
                 studentFields[(int)AllStudentFieldNames.SchoolYear] = nav.Eval(sXp_SchoolYear);
                 studentFields[(int)AllStudentFieldNames.AssessmentVersion] = nav.Eval(sXp_AssessmentVersion);
-                studentFields[(int)AllStudentFieldNames.StudentIdentifier] = studentId;
-                studentFields[(int)AllStudentFieldNames.AlternateSSID] = alternateSSID;
+                studentFields[(int)AllStudentFieldNames.StudentIdentifier] = NotExcel ? studentId : studentId + "\t"; // Tab causes Excel to treat this as text, not number
+                studentFields[(int)AllStudentFieldNames.AlternateSSID] = NotExcel ? alternateSSID : alternateSSID + "\t";
                 studentFields[(int)AllStudentFieldNames.FirstName] = firstName;
                 studentFields[(int)AllStudentFieldNames.MiddleName] = middleName;
                 studentFields[(int)AllStudentFieldNames.LastOrSurname] = lastOrSurname;
@@ -679,8 +687,8 @@ namespace TabulateSmarterTestResults
                 studentFields[(int)AllStudentFieldNames.SubmitDateTime] = NormalizeDateTime(nav.Eval(sXp_SubmitDateTime));
                 studentFields[(int)AllStudentFieldNames.Status] = nav.Eval(sXp_Status);
                 studentFields[(int)AllStudentFieldNames.StatusDateTime] = nav.Eval(sXp_StatusDateTime);
-                studentFields[(int)AllStudentFieldNames.AdministrationCondition] = nav.Eval(sXp_AdministrationCondition);
-                studentFields[(int)AllStudentFieldNames.Completeness] = nav.Eval(sXp_Completeness);
+                studentFields[(int)AllStudentFieldNames.AdministrationCondition] = nav.EvalFirstMatch(sXp_AdministrationCondition_0, sXp_AdministrationCondition_1);
+                studentFields[(int)AllStudentFieldNames.Completeness] = nav.EvalFirstMatch(sXp_Completeness_0, sXp_Completeness_1);
 
                 studentFields[(int)AllStudentFieldNames.AccessibilityCodes] = CompileAccessibilityCodes(nav);
 
@@ -697,6 +705,8 @@ namespace TabulateSmarterTestResults
                 ProcessScoresAll(nav, sXp_ClaimScore2, sXp_ClaimScore2StandardError, sXp_ClaimScore2AchievementLevel, studentFields, (int)AllStudentFieldNames.Claim2Score);
                 ProcessScoresAll(nav, sXp_ClaimScore3, sXp_ClaimScore3StandardError, sXp_ClaimScore3AchievementLevel, studentFields, (int)AllStudentFieldNames.Claim3Score);
                 ProcessScoresAll(nav, sXp_ClaimScore4, sXp_ClaimScore4StandardError, sXp_ClaimScore4AchievementLevel, studentFields, (int)AllStudentFieldNames.Claim4Score);
+                studentFields[(int)AllStudentFieldNames.OverallTheta] = nav.Eval(sXp_OverallTheta);
+                studentFields[(int)AllStudentFieldNames.OverallThetaStandardError] = nav.Eval(sXp_OverallThetaStandardError);
             }
 
             // Write one line to the CSV
@@ -1018,5 +1028,27 @@ namespace TabulateSmarterTestResults
                 return nav.Evaluate(expression).ToString();
             }
         }
+
+        public static string EvalFirstMatch(this XPathNavigator nav, params XPathExpression[] expressions)
+        {
+            foreach (XPathExpression exp in expressions)
+            {
+                if (exp.ReturnType == XPathResultType.NodeSet)
+                {
+                    XPathNodeIterator nodes = nav.Select(exp);
+                    if (nodes.MoveNext())
+                    {
+                        return nodes.Current.ToString();
+                    }
+                }
+                else
+                {
+                    string value = nav.Evaluate(exp).ToString();
+                    if (!string.IsNullOrEmpty(value)) return value;
+                }
+            }
+            return string.Empty;
+        }
+
     }
 }
