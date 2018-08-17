@@ -50,7 +50,7 @@ characters or shorter in length.
  -notxl
 When using the 'all' format (-fmt all) studentID and AlternateSSID fields are
 padded with a trailing tab character to prevent Microsoft Excel from treating
-them as numbers. This option supporesses the tab padding for use by other CSV
+them as numbers. This option suppresses the tab padding for use by other CSV
 readers. The data warehouse format never pads and this option has no effect
 in that mode.
 
